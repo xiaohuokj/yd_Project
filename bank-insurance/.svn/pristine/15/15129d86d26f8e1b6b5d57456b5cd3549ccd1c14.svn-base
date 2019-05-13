@@ -1,0 +1,345 @@
+<template>
+    <el-header class="clearfix p-relative" height="94px" style="margin-top:10px">
+        <select-active></select-active>
+        <div class="head-left f-left clearfix"></div>
+        <div class="head-center f-left p-relative clearfix">
+            <img width="100%" src="../../assets/images/headimg.png">
+            <!--<div class="cityName p-absolute">{{governmentName}}{{pageName}}</div>-->
+            <!-- <span class="head-center-left p-absolute"></span>
+            <span class="head-center-right p-absolute"></span> -->
+        </div>
+        <!--<div class="head-right f-right clearfix">
+            <i class="tool-icon tool-time"></i><span class="nowtime">{{nowDate}}</span>
+        </div>-->
+        <div class="heads-right">
+            <div class="heads-content">
+                <div class="heads-content-inline tianqi">{{fx}}<span class="qiwen">{{high}}</span>/<span>{{low}}</span><span class="qiwen">{{type}}</span></div>
+                <div class="heads-content-inline date"><span></span></div>
+                <div class="heads-content-inline user"><i class="userIcon"></i>{{user_nameFun}}</div>
+                <!--<div class="heads-content-inline signout">退出登录</div>-->
+                <el-button class="heads-content-inline signout" type="text" @click="open4"><i class="exitIcon"></i>退出登录</el-button>
+            </div>
+        </div>
+        <div class="toggle-screen p-absolute" @click="fullScreenFun"><span class="tool-icon"
+                                                                           :class="[fullScreen ? 'tool-full':'tool-unfull']"></span>
+        </div>
+    </el-header>
+</template>
+<script>
+    import moment from 'moment'
+    import bus from '@/libs/bus'
+    import selectActive from '@/views/Layout/selectActive'
+    import {bankLogout,weather} from '@/libs/api'
+    import {getCookie, delCookie} from '@/libs/cookieFun'
+
+    export default {
+        data() {
+            return {
+                nowDate: moment().format('YYYY-MM-DD HH:mm:ss'),
+                governmentName: '测试啊',
+                fullScreen: false,
+                pageName: '测试',
+                timer: null,
+				aaa:[],
+				fx:'',//风
+				high:'',//最高气温
+				low:'',//最低气温
+				type:'',//云
+				nowTime:''
+            }
+        },
+        components: {
+            selectActive
+        },
+        computed: {
+            user_nameFun() {
+                return localStorage.getItem('user_name')
+            }
+        },
+        mounted() {
+            let self = this;
+        },
+        beforeDestroy() {
+            clearInterval(this.timer);
+        },
+        destroyed() {
+            clearInterval(this.timer);
+        },
+        methods: {
+// 			 timeFormate(timeStamp) {
+//       let year = new Date(timeStamp).getFullYear();
+//       let month =new Date(timeStamp).getMonth() + 1 < 10? "0" + (new Date(timeStamp).getMonth() + 1): new Date(timeStamp).getMonth() + 1;
+//       let date =new Date(timeStamp).getDate() < 10? "0" + new Date(timeStamp).getDate(): new Date(timeStamp).getDate();
+//       let hh =new Date(timeStamp).getHours() < 10? "0" + new Date(timeStamp).getHours(): new Date(timeStamp).getHours();
+//       let mm =new Date(timeStamp).getMinutes() < 10? "0" + new Date(timeStamp).getMinutes(): new Date(timeStamp).getMinutes();
+//        let ss =new Date(timeStamp).getSeconds() < 10? "0" + new Date(timeStamp).getSeconds(): new Date(timeStamp).getSeconds();
+//       // return year + "年" + month + "月" + date +"日"+" "+hh+":"+mm ;
+//       this.nowTime = year + "年" + month + "月" + date +"日"+" "+hh+":"+mm+":"+ss;
+//       // console.log(this.nowTime);
+//     },
+// 定时器函数
+//     nowTimes(){
+//       this.timeFormate(new Date());
+//       setInterval(this.nowTimes,1*1000);
+//     },
+            open4() {
+                const h = this.$createElement;
+                this.$msgbox({
+                    title: '提示',
+                    message: h('p', null, [
+                        h('span', null, '您确定要退出登录吗？'),
+                        // h('i', { style: 'color: teal' }, 'VNode')
+                    ]),
+                    showCancelButton: true,
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    beforeClose: (action, instance, done) => {
+                        if (action === 'confirm') {
+                            instance.confirmButtonLoading = true;
+                            instance.confirmButtonText = '执行中...';
+                            setTimeout(() => {
+                                done();
+                                setTimeout(() => {
+                                    instance.confirmButtonLoading = false;
+                                }, 300);
+                            }, 3000);
+                        } else {
+                            done();
+                        }
+                    }
+                }).then(action => {
+                    this.$get(bankLogout, {token: getCookie('token')}).then((res) => {
+                        if (res.status === 200) {
+                            delCookie('token')
+                            localStorage.removeItem('cattlefarm_Id');
+                            sessionStorage.removeItem('user_name');
+                            this.$router.push({path: '/login'})
+                            this.$message({
+                                type: 'info',
+                                message: res.message
+                            });
+                        }
+                    })
+                }).catch(() => {
+                    // console.log('aa')
+                    // 防止点击取消按钮控制台报错
+                });
+            },
+            fullScreenFun() {
+                if (!this.fullScreen) {
+                    this.fullScreen = true;
+                    var docElm = document.documentElement;
+                    if (docElm.requestFullscreen) {//W3C
+                        docElm.requestFullscreen();
+                    } else if (docElm.mozRequestFullScreen) {//FireFox
+                        docElm.mozRequestFullScreen();
+                    } else if (docElm.webkitRequestFullScreen) {//Chrome等
+                        docElm.webkitRequestFullScreen();
+                    } else if (elem.msRequestFullscreen) { //IE11
+                        elem.msRequestFullscreen();
+                    }
+                } else {
+                    this.fullScreen = false;
+                    if (document.exitFullscreen) {//W3C
+                        document.exitFullscreen();
+                    } else if (document.mozCancelFullScreen) { //FireFox
+                        document.mozCancelFullScreen();
+                    } else if (document.webkitCancelFullScreen) { //Chrome
+                        document.webkitCancelFullScreen();
+                    } else if (document.msExitFullscreen) {//IE11
+                        document.msExitFullscreen();
+                    }
+                }
+            },
+        },
+		beforeDestroy() {
+		    clearInterval(this.timer);
+		},
+        created() {
+			
+            let self = this;
+            document.onkeydown = function (e) {
+                let _key = window.event.keyCode;
+                if (_key === 27) {
+                    if (self.fullScreen) {
+                        self.fullScreenFun();
+                    }
+                } else if (_key === 122) {
+                    self.fullScreenFun();
+                }
+            }
+			this.nowTimes();
+            // var data = eval("("+sessionStorage.getItem("LOGIN_INFO")+")");
+            // this.governmentName = data.cities[0].governmentName;
+        },
+		mounted: function(){
+			//debugger
+			this.$get(weather).then((res) => {
+				console.log(res)
+				this.aaa=res;
+				for(var i=0; i<this.aaa.length; i++){
+					this.fx=this.aaa[i].fx
+					this.high=this.aaa[i].high
+					this.low=this.aaa[i].low
+					this.type=this.aaa[i].type
+				}
+// 				debugger
+// 				console.log(this.fx)
+			}).catch((err) => {
+			})
+		}
+    }
+</script>
+<style type="text/css" lang="scss" scoped>
+    $--commHeight: 100%;
+	.qiwen{
+		padding-left: 10px;
+		padding-right: 3px;
+	}
+    .el-header {
+        width: 100%;
+        height: 94px;
+        padding: 0 15px;
+
+        .head-left, .head-right {
+            width: 15%;
+            height: $--commHeight;
+           
+        }
+
+        .head-center {
+            width: calc(100% - 30%);
+            height: $--commHeight;
+            padding: 0 10px 0;
+            box-sizing: border-box;
+            text-align: center;
+
+            .cityName {
+                font-size: 38px;
+                color: #fff;
+                width: $--commHeight;
+                text-align: center;
+                top: 30px;
+            }
+
+            span {
+                width: 40px;
+                height: $--commHeight;
+                border-bottom: 3px solid #32a2ff;
+                display: inline-block;
+                top: 0;
+
+                &.head-center-left {
+                    left: 10px;
+                }
+
+                &.head-center-right {
+                    right: 10px;
+                }
+            }
+        }
+
+        .head-right {
+            .tool-time {
+                width: 22px;
+                height: 22px;
+                background-position: -157px -23px;
+                margin-right: 10px;
+                vertical-align: -5px;
+            }
+        }
+
+        .heads-right {
+            position: absolute;
+            width: 50%;
+            height: 32px;
+            top: 46%;
+            right: 0;
+            bottom: 0;
+
+            .heads-content {
+                height: 32px;
+                line-height: 32px;
+                float: right;
+                text-align: right;
+                .heads-content-inline {
+                    display: inline-block;
+                }
+
+                .tianqi {
+                    padding-right: 20px;
+                }
+
+                .tianqi, .date {
+                    color: #67ACFF;
+                }
+
+                .date, .user {
+                    padding-right: 20px;
+                }
+
+                .signout {
+                    padding-right: 10px;
+                    cursor: pointer;
+                    font-size: 12px;
+                    .exitIcon {
+                        display: inline-block;
+                        vertical-align: middle;
+                        width: 14px;
+                        height: 14px;
+                        background-image: url("../../assets/img/exit.png");
+                        margin-right: 4px;
+                    }
+                }
+
+                .user {
+                    .userIcon {
+                        display: inline-block;
+                        vertical-align: middle;
+                        width: 14px;
+                        height: 14px;
+                        background-image: url("../../assets/img/user.png");
+                        margin-right: 4px;
+                    }
+                }
+
+                .user, .signout {
+                    color: #1DE8F5;
+                }
+            }
+        }
+
+        .nowtime {
+            display: inline-block;
+            font-size: 16px;
+            color: #2b8bf4;
+            line-height: 94px;
+            height: 94px;
+        }
+
+        .toggle-screen {
+            width: 88px;
+            height: 88px;
+            background-color: #2e53b0;
+            right: -44px;
+            top: -44px;
+            border-radius: 50%;
+        }
+
+        .tool-unfull {
+            width: 30px;
+            height: 30px;
+            background-position: -100px -21px;
+            margin-top: 45px;
+            margin-left: 14px;
+        }
+
+        .tool-full {
+            width: 28px;
+            height: 30px;
+            background-position: -76px -20px;
+            margin-top: 45px;
+            margin-left: 14px;
+        }
+    }
+</style>

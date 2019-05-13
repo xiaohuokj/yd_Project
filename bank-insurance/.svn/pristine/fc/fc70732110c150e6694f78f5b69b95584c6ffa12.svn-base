@@ -1,0 +1,259 @@
+<template>
+	<div class="menu-style p-absolute">
+		<div class="menu-list p-relative" @mouseleave="hidemenu">
+			<div class="toggle-menu-btn p-absolute" :class="showMenu?'hideBtn':'showBtn'" @click="showfun"></div>
+			<!-- <el-collapse-transition> -->
+				<ul class="menu-grandparent" v-show="showMenu">
+					<template v-for="(item,index) in menulist">
+						<li class="menu-parent">
+							<a v-if="item.url" :href="item.url">
+								<p>
+									<i class="menu-icon" :class="item.style"></i>
+									<span class="menu-name">{{item.name}}</span>
+								</p> 
+							</a>
+							<router-link v-else-if="item.path"  :to="item.path"> 
+								<p>
+									<i class="menu-icon" :class="item.style"></i>
+									<span class="menu-name">{{item.name}}</span>
+								</p>
+							</router-link>
+							<div v-else>
+								<p @mouseover="showChildMenu" @mouseout="hideChildMenu">
+									<i class="menu-icon" :class="item.style"></i>
+									<span class="menu-name">{{item.name}}</span>
+								</p>
+								<template>
+									<ol class="menu-child p-absolute" :class="{menuChildShow:childshow}" v-if="item.submenu">
+										<div class="menu-child-tit">{{item.name}}</div>
+										<li class="menu-child-list" v-for="value in item.submenu">
+											<router-link :to="value.url"> 
+												<p>
+													<i class="style-dot">●</i>{{value.name}}
+												</p>
+											</router-link>
+										</li>
+									</ol>	
+								</template>
+							</div>
+						</li>
+					</template>
+				</ul>
+			<!-- </el-collapse-transition> -->
+		</div>
+	</div>
+</template>
+<script>
+export default {
+	name:'Menu',
+	data(){
+		return{
+			showMenu:false,
+			childshow:false,
+			menulist:[
+                {
+                    id:0,
+                    name:'环卫监管',
+                    url:'../supervise-web/index.html',
+                    style:'superviseicon',
+                    current:'iconcurrent'
+               },
+               {
+                    id:1,
+                    name:'场站监控',
+                    url:'../supervise-web/depotIndex.html',
+                    style:'stationicon',
+                    current:'iconcurrent'
+
+               },
+               {
+                    id:2,
+                    name:'基础信息',
+                    url:'',
+                    style:'informationicon',
+                    current:'iconcurrent',
+                    submenu:[
+                        {
+                            id:21,
+                            name:'人员管理',
+                            url:'/userinfo',
+                            childbjhover:false,   
+                            childbjshow:false,
+                    },
+                     {
+                            id:23,
+                            name:'标准管理',
+                            url:'/standard',
+                            childbjhover:false,
+                            childbjshow:false,
+                    }
+                    ]
+               },
+               {
+                    id:3,
+                    name:'应急指挥',
+                    path:'/emergecommand',
+                    // url:'../supervise-web/depotIndex.html',
+                    style:'stationicon',
+                    current:'iconcurrent'
+
+               }
+            ],
+		}
+	},
+	methods:{//是否显示菜单
+		showfun(){
+           this.showMenu=!this.showMenu
+        },
+        hidemenu(){
+        	this.showMenu = false;
+        },
+        showChildMenu(){
+        	this.childshow = true;
+        	$('.menu-child').css({'left':'74px'});
+        },
+        hideChildMenu(){
+        	this.childshow = false;
+        	$('.menu-child').css({'left':'-294px'});
+        }
+	}
+}
+</script>
+<style lang="scss">
+$--width:74px;
+$--commlength:100%;
+.toggle-menu-btn{
+	left: 0px;
+    top: 0px;
+    width: 74px;
+    z-index: 100;
+    text-align: center;
+    height: 94px;
+    box-sizing: border-box;
+    background:url(../../assets/images/menuicon.png) no-repeat;
+    cursor:pointer;
+}
+.showBtn{
+    background-color:none;
+    background-position:0px 0px; 
+}
+.hideBtn{
+    background-position:0px -99px; 
+    background-color:#263238;
+}
+.menu-style{
+	width:$--width;
+	height:$--commlength;
+    z-index:100;
+}
+.menu-list{
+	width:$--width;
+	min-height:500px;
+	height:$--commlength;
+	padding-top:94px;
+	.menu-grandparent{
+		background-color:#263238;
+		width:$--width;
+		height:$--commlength;
+		.menu-parent{
+		    width: $--commlength;
+		    height: 94px;
+		    a{
+		    	display:block;
+		    	text-decoration:none;
+		    }
+		    .menu-name{
+		    	height:30px;
+		    	display:inline-block;
+		    	width:100%;
+		    	line-height:30px;
+		    	text-align:center;
+		    	color:#fff;
+		    	display:none;
+		    }
+		    .menu-icon{
+				display:block;
+				width:$--commlength;
+				height:94px;
+				width:100%;
+				background:url(../../assets/images/menuicon.png) no-repeat;
+				&:hover{
+					height:64px;
+					&+.menu-name{
+			        	display:block;
+			        }
+				}
+			}
+		    // 环卫监管
+            .superviseicon{
+                background-position:0px -188px; 
+                &:hover{
+                    background-position:0px -198px; 
+                }
+            }
+              // 场站监控
+            .stationicon{
+                background-position:0px -262px; 
+                &:hover{
+                      background-position:0px -272px; 
+                }
+            }
+              // 场站监控
+            .informationicon{
+                background-position:0px -336px; 
+                &:hover{
+                      background-position:0px -346px; 
+                }
+            }
+		}	
+	}
+	.menu-child-tit{
+        line-height: 80px;
+        padding-left: 20px;
+        font-size: 16px;
+        color:#fff;
+    }
+	.menu-child{
+		width:220px;
+		min-height:500px;
+		height:$--commlength;
+		background: #242f35;
+		left:-294px;
+		transition: left .4s;
+        -moz-transition: left .4s;  /* Firefox 4 */
+        -webkit-transition: left .4s;   /* Safari 和 Chrome */
+        -o-transition: left .4s;
+		top:0;
+		&.menuChildShow{
+			left:74px;
+			transition: left .4s;
+            -moz-transition: left .4s;  /* Firefox 4 */
+            -webkit-transition: left .4s;   /* Safari 和 Chrome */
+            -o-transition: left .4s;
+		}
+		.menu-child-list{
+            padding:0;
+            padding-left: 26px;
+            line-height: 40px;
+            height:40px;
+            font-size: 14px;
+            a{
+            	color:white;
+            	display:inline-block;
+               	text-decoration: none;
+            }
+            .style-dot{
+                font-style: normal;
+                font-size: 12px;
+                padding-right: 10px;
+            }
+            &.childcurrent{
+                background: #1d262b;
+            }
+            &:hover{
+                background: #273339; 
+            }
+        }
+	}
+}
+</style>

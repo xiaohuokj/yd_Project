@@ -1,0 +1,60 @@
+.el-button{
+    border-radius:$--border-radius-base;
+}
+.el-button--text,
+.el-button--text:focus,
+.el-button--text:hover{
+    color:$--link-color;
+}
+.el-button.el-button--text{
+    padding:0px;
+    min-width:0;
+    font-size: 14px;
+    .icon16{
+        vertical-align:-4px;
+        margin-right:5px;
+    }
+}
+.el-button--text:hover{
+    text-decoration:underline;
+}
+.el-button--primary.is-active,
+.el-button--primary:active{
+    background-color:rgb(73, 181, 156);
+    border-color: rgb(73, 181, 156);
+}
+.el-button{
+    padding:9px 10px;
+    min-width:96px;
+}
+.el-button--small{
+    padding:8px 10px;
+    min-width:76px;
+}
+.el-button--mini{
+    line-height:16px;
+    padding:4px 5px;
+    min-width:0px;
+    .icon16{
+        vertical-align:top;
+    }
+    &.el-button--default{
+        color:$--link-color;
+        border-color:#6fa9ff;
+    }
+    &:hover{
+        background-color:#eff5fd;
+    }
+}
+.icon-opt-btn{
+    background-color:#ffffff;
+    border:1px #a9dacd solid;
+    cursor:pointer;
+    width:24px;
+    height:24px;
+    line-height:normal;
+    padding:3px;
+}
+.icon-opt-btn .icon16{
+    vertical-align:-2px;
+}

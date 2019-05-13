@@ -1,0 +1,177 @@
+.map-marker{
+    span{
+        background-color:rgb(255,255,255);
+        opacity: 0.9;
+        font-size: 14px;
+        line-height: 18px;
+        color: #091a4a;
+        max-width: 260px;
+        min-width: 52px;
+        padding:4px 6px;
+        display: none;
+        position: absolute;
+        bottom: 47px;
+        left: 50%;
+        border-radius:4px;
+        -webkit-transform:translateX(-50%);
+        -moz-transform:translateX(-50%);
+        -ms-transform:translateX(-50%);
+        transform:translateX(-50%);
+        box-sizing:border-box;
+        white-space: nowrap; 
+        overflow: hidden;
+        word-break: break-all;
+        word-wrap: break-word;  
+    }
+    &:hover{
+        span{
+            display:block;   
+        }
+    }
+    &.active{
+        span{
+            display:block;   
+        }
+    }
+}
+.deviceMarker.A1 {/*清扫*/
+    background-position: -175px 0px;
+    &.offline{
+        background-position: -271px 0px;
+    }
+}
+.deviceMarker.A2 {/*洒水*/
+    background-position: -175px 0px;
+    &.offline{
+        background-position: -271px 0px;
+    }
+}
+.deviceMarker.A3 {/*垃圾收运*/
+    background-position: -142px 0px;
+    &.offline{
+        background-position: -207px 0px;
+    }
+}
+.deviceMarker.A4 {/*垃圾转运*/
+    background-position: -142px 0px;
+    &.offline{
+        background-position: -207px 0px;
+    }
+}
+.deviceMarker.A5 {/*吸污*/
+    background-position: -142px 0px;
+    &.offline{
+        background-position: -207px 0px;
+    }
+}
+.deviceMarker.B1 {/*保洁*/
+    background-position: -70px -0px;
+    &.offline{
+        background-position: -239px 0px;
+    }
+}
+.deviceMarker.E {/*压缩 中转*/
+    background-position: -35px 0px;
+}
+.deviceMarker.F {/*处理厂*/
+    background-position: 0px 0px;
+}
+.deviceMarker.G {/*公共厕所*/
+    background-position: -107px 0px;
+}
+.deviceMarker.G1 {/*公共厕所*/
+    background-position: -304px 0px;
+}
+.deviceMarker.icon-quality {/*质量事件*/
+    background-position: -303px 0px;
+}
+.deviceMarker.gover,.deviceMarker.company{
+    width:28px;
+    height:30px;
+}
+.deviceMarker.gover.end{
+    background-position: -84px -79px;
+}
+.deviceMarker.gover.dealing{
+    background-position: -140px -79px;
+}
+.deviceMarker.gover.over{
+    background-position: -113px -79px;
+}
+.deviceMarker.company.end{
+    background-position: -2px -79px;
+}
+.deviceMarker.company.dealing{
+    background-position: -57px -79px;
+}
+.deviceMarker.company.over{
+    background-position: -30px -79px;
+}
+.map-device-detail{
+    width:250px;
+    height:300px;
+    background-color:#030a22;
+    border:1px solid #183d76;
+    .over-tit{
+        height:36px;
+        background-color:#0c3667;
+        line-height:36px;
+        color:#fff;
+        padding:0 20px;
+        .el-icon-close{
+            font-size:16px;
+            right:20px;
+            top:10px;
+            cursor:pointer;
+        }
+    }
+    .over-content{
+        padding:10px 20px;
+        height:calc(100% - 36px);
+        .detail-item{
+            height:22px;
+            line-height:22px;
+            overflow:hidden;
+            text-overflow:ellipsis;
+            white-space:nowrap;
+        }
+        label{
+            color:#868686;
+            text-align: right;
+            margin-right: 10px;
+            min-width: 48px;
+            display: inline-block;
+        }
+        .detail-info{
+            color:#fff;
+            display:inline-block;
+            .null-data{
+                text-align:left;
+                color:#a2a1a1;
+            }
+        }
+        .terminal-tbn{
+            height:36px;
+            bottom:0;
+            width:250px;
+            left:0;
+            .talk-btn,.videos-btn{
+                display:inline-block;
+                width:123px;
+                height:100%;
+                color:#fff;
+                line-height:36px;
+                text-align:center;
+                cursor:pointer;
+            }
+            .talk-btn{
+                border-right:1px solid #868686;
+                box-sizing:border-box;
+            }
+            .tool-icon{
+                vertical-align:-5px;
+                margin-right:5px;
+            }
+        }
+    }
+}

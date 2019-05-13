@@ -1,0 +1,1122 @@
+<template>
+    <div :class="fullScreenStatus ? 'map-wrap-full' : 'map-wrap'"
+         :style="'width:' + mapWidth + '; height:' + mapHeight">
+        <div class="total-num">总头数:<span>{{cattleTotalNumber}}</span> 在线数:<span>{{online}}</span> 离线数:<span>{{cattleTotalNumber-online}}</span></div>
+        <div id="eden-map" :class="fullScreenStatus ? 'map-full' : ''"></div>
+        <v-options v-show="true" :prePolygonArr="prePolygon" @fullScreen="fullScreen"
+                   :fullStatus="fullScreenStatus" @showMarker="changeShowMarker"
+                   :vMarkerClustererStatus="vMarkerClustererStatus" :EnclosureStatus="EnclosureStatus"
+                   @Enclosure="changeEnclosure"></v-options>
+    </div>
+</template>
+<script>
+    const oScript = document.createElement('script');
+    oScript.type = 'text/javascript';
+    oScript.src = '//webapi.amap.com/maps?v=1.3&key=1f3fb9df758e80830b1be722930f002e';
+    document.body.appendChild(oScript);
+    import {queryFenceList, cpRealTimePreview, cattleTracks, warnRecordOne, cattlecount} from '@/libs/api'
+    import {getCookie} from '@/libs/cookieFun'
+    import vOptions from './Options'
+    import points from './points'
+    import axios from 'axios'
+    import bus from '@/libs/bus'
+
+    var pointsArray = [{'lnglat': ['122.080963', '43.231522']}, {'lnglat': ['122.084353', '43.229864']},
+        {'lnglat': ['122.080963', '43.231365']}, {'lnglat': ['122.078002', '43.234492']}]
+    let markerplayback,
+        lineArrplayback = [[122.07753267782823, 43.23200552262466], [122.07753267782823, 43.23200552262466], [122.07753267782823, 43.23200552262466], [122.07753267782823, 43.23200552262466], [122.07753267782823, 43.23200552262466], [122.07753267782823, 43.23200552262466], [122.07753267782823, 43.23200552262466], [122.07753267782823, 43.23200552262466], [122.07753267782823, 43.23200552262466], [122.07753267782823, 43.23200552262466], [122.07753267782823, 43.23200552262466], [122.07753267782823, 43.23200552262466], [122.07753267782823, 43.23200552262466], [122.07753267782823, 43.23200552262466], [122.07753267782823, 43.23200552262466], [122.07753267782823, 43.23200552262466], [122.07743048160586, 43.231445302330734]];
+
+    export default {
+        components: {
+            vOptions
+        },
+        data() {
+            return {
+                cattleTotalNumber: 0,
+                online:0,
+                oveline:0,
+                pageRequest: {pageNum: 1, pageSize: 8},
+                pageResult: {},
+                filters: {
+                    label: ''
+                },
+                map: '',
+                fullScreenStatus: false,
+                MarkerClustererMarker: '',
+                vMarkerClustererMarkers: [],
+                vMarkerClustererStatus: true,
+                EnclosureStatus: true,
+                datasdata: [],
+                cattlefarmId: this.$route.query.id || localStorage.getItem("cattlefarm_Id"), // 牛场id 0_CSQY001
+                markerplayback: '',
+                lineArrplayback: [],
+                polygonArray: [],
+                markerLists:[]
+
+            }
+        },
+        props: ['mapWidth', 'mapHeight', 'options', 'prePolygon'],
+        mounted() {
+            let self = this
+            /*self.$nextTick(()=> {
+                // bus.$emit('cattlefarm_Id', self.$route.query.id)
+                bus.$on('cattlefarm_Id',(cattlefarm_Id)=>{
+                    self.cattlefarmId = cattlefarm_Id
+
+                })
+            })*/
+            self.mapInit()
+            self.PolygonInit()
+            self.cattleTotal()
+
+          bus.$on('cattlefarm_Id',(cattlefarm_Id)=>{
+                self.cattlefarmId = cattlefarm_Id
+                self.mapInit()
+                self.PolygonInit()
+                self.cattleTotal()
+            });
+
+            /*    if (self.$route.query.id) {
+                  self.cattlefarmId = self.$route.query.id
+                  self.mapInit()
+                  self.PolygonInit()
+                  self.cattleTotal()
+              }*/
+        },
+        beforeDestroy () {
+            bus.$off('cattlefarm_Id');
+        },
+        methods: {
+            cattleTotal () {
+                let data = {
+                    cattlefarmId: this.cattlefarmId,
+                    token: getCookie('token')
+                }
+                this.$get(cattlecount, data).then((res) => {
+                    if (res.code === 200) {
+                        this.cattleTotalNumber = res.data
+                    }
+                })
+            },
+            PolygonInit() {
+                let _this = this
+                let data = {
+                    cattlefarmId: _this.cattlefarmId,
+                    token: getCookie('token')
+                }
+                _this.$get(queryFenceList, data).then((res) => {
+                    if (res.code === 200) {
+                        if (res.data.length > 0) {
+                            for (var i = 0; i < res.data.length; i++) {
+                                _this.polygonArray = new AMap.Polygon({
+                                    path: res.data[i].point,
+                                    fillOpacity: 0,
+                                    // fillColor: '#1791fc', // 多边形填充颜色
+                                    borderWeight: 1, // 线条宽度，默认为 1
+                                    strokeColor: 'red', // 线条颜色
+                                });
+                                _this.map.add(_this.polygonArray);
+                                _this.map.setFitView(_this.polygonArray)
+                            }
+                        }
+                    }
+                })
+            },
+            async mapInit() {
+                var url =  require("@/views/Monitored/icon/112.jpg");
+                let _this = this
+                _this.map = new AMap.Map('eden-map', {
+                    resizeEnable: true,
+                    // center: [122.248524, 43.65943],
+                    layers: [
+                        // 卫星
+                        // new AMap.TileLayer.Satellite(),
+                        // 路网
+                        new AMap.TileLayer.RoadNet(),
+
+                        new AMap.ImageLayer({
+
+                            url: url,
+                            bounds: new AMap.Bounds(
+                                [122.061583,43.235542],
+                                [122.091774,43.233698]
+
+                            )})
+                    ],
+                    zoom: 4
+                })
+                // _this.map.setMapStyle('amap://styles/blue');
+                var markerList = []
+                var positions = []
+
+                let datas = {
+                    cattlefarmId: _this.cattlefarmId,
+                    token: getCookie('token')
+                }
+                var cpRealTimePreview_data = await this.$get(cpRealTimePreview, datas);
+                // debugger
+                this.online=0;
+                this.oveline=0;
+                for (let i = 0; i < cpRealTimePreview_data.data.length; i++) {
+                    var iconTrue = require("@/views/Monitored/icon/cow3.png")
+                    if (cpRealTimePreview_data.data[i].isOnline === "true") { // true 是在线  false 是离线
+                        iconTrue = require("@/views/Monitored/icon/cow3.png");
+                        this.online= this.online+1
+                    } else {
+                        iconTrue = require("@/views/Monitored/icon/cow1.png");
+                        this.oveline=this.oveline+1
+                    }
+                    var markerLists = new AMap.Marker({
+                        position: [cpRealTimePreview_data.data[i].longitude,cpRealTimePreview_data.data[i].latitude],
+                        map:_this.map,
+                        icon: iconTrue,
+                        size: (28, 42),
+                        zIndex: 9999999
+                    })
+                    // positions.push(points[i]['lnglat'])
+                    markerList.push(markerLists)
+                    _this.vMarkerClustererMarkers.push(markerLists)
+                    var title = '子扣编号(' + cpRealTimePreview_data.data[i].rfid + ')',
+                        content = [];
+                    //编号，颜色，品种，经度，编号，是否在线，纬度，牛场名称
+                    markerLists.content = _this.createInfoWindow(title, cpRealTimePreview_data.data[i].coatColour, cpRealTimePreview_data.data[i].variety, cpRealTimePreview_data.data[i].latitude, cpRealTimePreview_data.data[i].rfid, cpRealTimePreview_data.data[i].isOnline, cpRealTimePreview_data.data[i].longitude, cpRealTimePreview_data.data[i].cattlefarmName)
+                    _this.map.clearInfoWindow() // 默认关闭marker循环所添加的事件点击显示
+
+                    //markerLists.on('click', this.markerClick)
+                    //markerLists.emit('click', {target: markerLists})
+                    AMap.event.addListener(markerLists, 'click', this.markerClick) // 本句重点，实现点击任意一个marker弹出对应的窗口
+                }
+
+
+                //加载工具条
+                AMap.plugin(["AMap.ToolBar"], function () {
+                    var tool = new AMap.ToolBar();
+                    _this.map.addControl(tool);
+                });
+                // // 聚合点
+                // AMap.plugin(["AMap.MarkerClusterer"], function () {
+                //     _this.MarkerClustererMarker = new AMap.MarkerClusterer(_this.map, _this.vMarkerClustererMarkers, {gridSize: 10});
+                // });
+
+               /* var polygon = new AMap.Polygon({
+                    path: positions,  //以5个点的坐标创建一个隐藏的多边形
+                    strokeOpacity: 0,//透明
+                    fillOpacity: 0,//透明
+                    map: _this.map,
+                    bubble: true//事件穿透到地图
+                });
+                var overlaysList = _this.map.getAllOverlays('polygon');//获取多边形图层
+
+                // 自适应居中所有mark点
+                _this.map.setFitView(overlaysList);
+                _this.map.getCenter();*/
+
+            },
+            fullScreen() {
+                this.fullScreenStatus = !this.fullScreenStatus
+            },
+            // 右上侧牛只隐藏/显示
+            changeShowMarker() {
+                this.vMarkerClustererStatus = !this.vMarkerClustererStatus
+                const edenMap = document.getElementById('eden-map')
+                const markers = edenMap.getElementsByClassName('amap-markers')[0]
+                if (this.vMarkerClustererStatus) {
+                    markers.style.display = 'block'
+                    document.getElementsByClassName('markerShow')[0].classList.remove("markerShowBgimgActive");
+                    document.getElementsByClassName('markerShow')[0].classList.add("markerShowBgimg");
+                    document.getElementsByClassName('btntxt_1')[0].style.color = "#15889A";
+                    this.MarkerClustererMarker = new AMap.MarkerClusterer(this.map, this.vMarkerClustererMarkers, {gridSize: 80})
+                } else {
+                    markers.style.display = 'none'
+                    document.getElementsByClassName('markerShow')[0].classList.remove("markerShowBgimg");
+                    document.getElementsByClassName('markerShow')[0].classList.add("markerShowBgimgActive");
+                    document.getElementsByClassName('btntxt_1')[0].style.color = "#303133";
+                    this.MarkerClustererMarker.clearMarkers() // 清除所有markers
+                    this.closeInfoWindow() // 关闭已打开的自定义窗体
+                }
+            },
+
+            // 右上侧围栏隐藏/显示
+            changeEnclosure() {
+                this.EnclosureStatus = !this.EnclosureStatus
+                if (this.EnclosureStatus) {
+                    document.getElementsByClassName('autoFullstatus')[0].classList.remove("autoFullstatusBgimgActive");
+                    document.getElementsByClassName('autoFullstatus')[0].classList.add("autoFullstatusBgimg");
+                    document.getElementsByClassName('btntxt_2')[0].style.color = "#15889A";
+                    this.PolygonInit(this.EnclosureStatus);
+                } else {
+                    document.getElementsByClassName('autoFullstatus')[0].classList.remove("autoFullstatusBgimg");
+                    document.getElementsByClassName('autoFullstatus')[0].classList.add("autoFullstatusBgimgActive");
+                    document.getElementsByClassName('btntxt_2')[0].style.color = "#303133";
+                    // this.PolygonInit(this.EnclosureStatus);
+                    /*this.polygon_1.hide();
+                    this.polygon_2.hide();*/
+                    this.map.remove(this.polygonArray) // 清除围栏
+                }
+            },
+
+            createInfoWindow(title, coatColour, variety, latitude, rfid, isOnline, longitude, cattlefarmNames) {
+                // 窗体父容器宽高定义
+                var info = document.createElement("div");
+                info.className = "custom-info input-card content-window-card";
+                info.style.width = "320px";
+                // info.style.height= "400px";
+                info.style.background = "#FFFFFF";
+                //可以通过下面的方式修改自定义窗体的宽高
+                // 定义顶部标题
+                var top = document.createElement("div");
+                top.style.height = "40px";
+                top.className = "info-top";
+
+                var closeX = document.createElement("div");
+                closeX.className = "headerBaseCss leftarrow";
+                closeX.innerHTML = "<i class='head-icon'></i><span style='position: absolute;left: 23px;font-size: 14px;color: #15889A;'>关闭</span>";
+                closeX.style.width = "20%";
+                closeX.onclick = this.closeInfoWindow;
+
+                var titleD = document.createElement("div");
+                titleD.style.width = "60%";
+                titleD.className = "headerBaseCss heade-tit";
+                titleD.innerHTML = title;
+
+                var titleRight = document.createElement("div");
+                titleRight.style.width = "20%";
+                titleRight.className = "headerBaseCss locus";
+                titleRight.setAttribute("data-id", rfid)
+                titleRight.innerHTML = "轨迹"
+                titleRight.onclick = this.Jump
+
+                top.appendChild(closeX);
+                top.appendChild(titleD);
+                top.appendChild(titleRight);
+                info.appendChild(top);
+
+                // 定义中部内容
+                var middle = document.createElement("div");
+                middle.className = "info-middle";
+                middle.style.backgroundColor = 'white';
+                // middle.innerHTML = content;
+                var middleTabwrapper = document.createElement("div");
+                var middleContent = document.createElement("div");
+                middleContent.className = "middleContent"
+                middleTabwrapper.className = "middleTabwrapper";
+                var iconTrue = "<b class='zaixian' style='color: #67C23A;'>在线</b>"
+                if (isOnline == "true") {
+                    iconTrue = "<b class='zaixian' style='color: #67C23A;'>在线</b>"
+                } else {
+                    iconTrue = "<b class='lixian' style='color: #F56C6C;'>离线</b>&nbsp;&nbsp;"
+                }
+                var contents = "<div id='middleTab_click1_content'>" +
+                    "<div class='long_lat'><p class='long_lat_txt1'>经度：</p><p class='long_lat_txt2 long_lat_color'>"+longitude+"</p></div>" +
+                    "<div class='long_lat'><p class='long_lat_txt1'>纬度：</p><p class='long_lat_txt2 long_lat_color'>"+latitude+"</p></div>" +
+                    "<div class='long_lat'><p class='long_lat_txt1'>牛只品种：</p><p class='long_lat_txt2'>"+variety+"</p></div>" +
+                    "<div class='long_lat'><p class='long_lat_txt1'>牛只毛色：</p><p class='long_lat_txt2'>"+coatColour+"</p></div>" +
+                    "<div class='long_lat'><p class='long_lat_txt1'>畜牧主：</p><p class='long_lat_txt2'>"+cattlefarmNames+"</p></div>" +
+                    "<div class='long_lat'><p class='long_lat_txt1'>耳标状态：</p><p class='long_lat_txt2'></p>"+iconTrue+"</div>" +
+                    "</div>" +
+                    "<div id='middleTab_click2_content' data-rfid='"+rfid+"' style='display: none;'></div>"
+                middleContent.innerHTML = contents
+                middleTabwrapper.innerHTML = "<div class='headerWrapper'><div class='middleTab_tollge tabActive' onclick='middleTab_click(this)'>牛只信息</div><div class='middleTab_tollge' onclick='middleTab_click(this)'>预警信息</div></div>"
+                info.appendChild(middleTabwrapper)
+                info.appendChild(middleContent)
+                // info.appendChild(middle);
+                // 定义底部内容
+                var bottom = document.createElement("div");
+                bottom.className = "info-bottom";
+                bottom.style.position = 'relative';
+                bottom.style.top = '0px';
+                bottom.style.margin = '0 auto';
+                var sharp = document.createElement("img");
+                sharp.src = "https://webapi.amap.com/images/sharp.png";
+                bottom.appendChild(sharp);
+                info.appendChild(bottom);
+                return info;
+            },
+
+            Jump(e) {
+                // this.$router.push({path: '/basice/ytBasicsEnterprise'})
+                this.mapTost(e.currentTarget.dataset.id)
+            },
+
+            // 轨迹弹出框
+            mapTost(rfid) {
+                var eden_map = document.getElementById('eden-map');
+                // 创建遮罩
+                var Tostcon = document.createElement("div");
+                Tostcon.className = "Tostcon";
+                eden_map.appendChild(Tostcon)
+                // 创建框
+                var mapTostContent = document.createElement("div");
+                mapTostContent.className = "mapTostContent";
+                eden_map.appendChild(mapTostContent);
+                // 框头部 右侧X
+                var mapTostContent_head = document.createElement('div');
+                mapTostContent_head.className = 'mapTostContent_head';
+                mapTostContent.appendChild(mapTostContent_head);
+
+                var mapTostContent_headTit = document.createElement('div');
+                mapTostContent_headTit.className = 'mapTostContent_headTit';
+                mapTostContent_headTit.innerHTML = "<span class='headTitFont'>牛只子扣信息—"+rfid+"</span>";
+                var mapTostContent_headData = document.createElement('div');
+                mapTostContent_headData.className = 'mapTostContent_headData';
+                mapTostContent_headData.innerHTML = "<div class='headDatas'></div>";
+                var mapTostContent_colse = document.createElement('div');
+                mapTostContent_colse.innerHTML = "X"
+                mapTostContent_colse.className = "kt-icon-guanbi_o"
+                mapTostContent_colse.onclick = this.colseMapTost
+
+                mapTostContent_head.appendChild(mapTostContent_headTit)
+                mapTostContent_head.appendChild(mapTostContent_headData)
+                mapTostContent_head.appendChild(mapTostContent_colse)
+
+
+                // 创建轨迹地图标签
+                var tostMap = document.createElement('div');
+                tostMap.setAttribute('id', 'tostMap');
+                mapTostContent.appendChild(tostMap)
+                var date_search = document.createElement('div');
+                date_search.className = "date_search"
+                date_search.innerHTML = '<div class="dateWrapperleft" style="display:none;"><input class="dateinput" id="date1" type="date"><b class="zhiTxt">至</b><input class="dateinput" id="date2" type="date"></div>'
+                mapTostContent.appendChild(date_search)
+
+                var dateWrapperright = document.createElement("div");
+                dateWrapperright.className = "dateWrapperright"
+
+                var searchBtn = document.createElement('div');
+                searchBtn.innerHTML = "轨迹播放"
+                searchBtn.setAttribute("id", "searchBtn")
+                searchBtn.onclick = this.searchclick
+
+                var search_playbtn_hr = document.createElement("b")
+                search_playbtn_hr.className = "search_playbtn_hr"
+
+                var palyBtn = document.createElement('div');
+                palyBtn.setAttribute("id", "palyBtn")
+                palyBtn.className = "playpause1"
+                palyBtn.onclick = this.palyBtn
+
+                dateWrapperright.appendChild(searchBtn)
+                dateWrapperright.appendChild(search_playbtn_hr)
+                date_search.appendChild(dateWrapperright)
+                dateWrapperright.appendChild(palyBtn)
+                this.tostMap = new AMap.Map('tostMap', {
+                    resizeEnable: true,
+                    center: [116.397428, 39.90923],
+                    zoom: 5
+                })
+                this.maxdateLength()
+                this.playback(rfid)
+            },
+            // 时间搜索按钮图标
+            searchclick() {
+                if (document.getElementById("date1").value == "" && document.getElementById("date2").value == "") {
+                    alert("当前未选择时间")
+                } else {
+                    alert("当前选择" + document.getElementById("date1").value + "和" + document.getElementById("date2").value)
+                }
+            },
+
+            // 运动轨迹播放/暂停按钮图标
+            palyBtn() {
+                if (document.getElementById("palyBtn").getAttribute("data-a") == "palyBtn2") {
+                    this.resumeAnimation()
+                    document.getElementById("palyBtn").setAttribute("data-a", "palyBtn1")
+                    document.getElementById("palyBtn").setAttribute("class", "playpause2")
+                    return;
+                }
+                if (document.getElementById("palyBtn").getAttribute("data-a") == "palyBtn1") {
+                    this.pauseAnimation()
+                    document.getElementById("palyBtn").setAttribute("data-a", "palyBtn2")
+                    document.getElementById("palyBtn").setAttribute("class", "playpause1")
+                    return;
+                }
+                this.startAnimation()
+                document.getElementById("palyBtn").setAttribute("data-a", "palyBtn1")
+                document.getElementById("palyBtn").setAttribute("class", "playpause2")
+
+            },
+
+            // 弹出框日期限制到当天
+            maxdateLength() {
+                var date1 = document.getElementById("date1");
+                var date2 = document.getElementById("date2");
+                //得到当前时间
+                var date_now = new Date();
+                //得到当前年份
+                var year = date_now.getFullYear();
+                //得到当前月份
+                //注：
+                //  1：js中获取Date中的month时，会比当前月份少一个月，所以这里需要先加一
+                //  2: 判断当前月份是否小于10，如果小于，那么就在月份的前面加一个 '0' ， 如果大于，就显示当前月份
+                var month = date_now.getMonth() + 1 < 10 ? "0" + (date_now.getMonth() + 1) : (date_now.getMonth() + 1);
+                //得到当前日子（多少号）
+                var date = date_now.getDate() < 10 ? "0" + date_now.getDate() : date_now.getDate();
+                date1.setAttribute("max", year + "-" + month + "-" + date)
+                date2.setAttribute("max", year + "-" + month + "-" + date)
+            },
+
+            // 轨迹回放
+            async playback(rfid) {
+
+                // 绘制轨迹
+                var cattleTracks_data = await this.$get(cattleTracks, {rfid: rfid, token:getCookie('token')})
+                if (cattleTracks_data.data.length > 0) {
+                    this.lineArrplayback = []// 清空上一次数据
+                    this.markerLists = []
+                    for (var i = 0; i< cattleTracks_data.data.length; i++) {
+                        this.lineArrplayback.push([cattleTracks_data.data[i].longitude, cattleTracks_data.data[i].latitude]),
+
+                            this.markerLists = new AMap.Marker({
+                                map: this.tostMap,
+                                position: [cattleTracks_data.data[i].longitude, cattleTracks_data.data[i].latitude],
+                                title : cattleTracks_data.data[i].createDate,
+                                icon: require("@/views/Monitored/icon/pointright.png"),
+                                offset: new AMap.Pixel(-10, -8),
+                                autoRotation: true,
+                                angle: 0
+                            })
+                    }
+                }
+                this.markerplayback = new AMap.Marker({
+                    map: this.tostMap,
+                    position: [this.lineArrplayback[0][0], this.lineArrplayback[0][1]],
+                    icon: require("@/views/Monitored/icon/play_niu.png"),
+                    //offset: new AMap.Pixel(-26, -13),
+                    offset: new AMap.Pixel(-26, -35),
+                    autoRotation: true,
+                    angle: -90
+                });
+                console.log(this.lineArrplayback[0][0])
+                var polyline = new AMap.Polyline({
+                    map: this.tostMap,
+                    path: this.lineArrplayback,
+                    showDir: true,
+                    strokeColor: "#28F",  //线颜色
+                    // strokeOpacity: 1,     //线透明度
+                    strokeWeight: 6,      //线宽
+                    // strokeStyle: "solid"  //线样式
+                });
+                var passedPolyline = new AMap.Polyline({
+                    map: this.tostMap,
+                    // path: lineArr,
+                    strokeColor: "#AF5",  //线颜色
+                    // strokeOpacity: 1,     //线透明度
+                    strokeWeight: 6,      //线宽
+                    // strokeStyle: "solid"  //线样式
+                });
+
+                this.markerplayback.on('moving', function (e) {
+                    passedPolyline.setPath(e.passedPath);
+                });
+                this.tostMap.setFitView()
+            },
+
+            // 开始运行轨迹
+            startAnimation() {
+                this.markerplayback.moveAlong(this.lineArrplayback, 90);
+            },
+
+            pauseAnimation() {
+                this.markerplayback.pauseMove();
+            },
+
+            resumeAnimation() {
+                this.markerplayback.resumeMove();
+            },
+
+
+            // 关闭弹出框地图
+            colseMapTost() {
+                var Tostcon = document.getElementsByClassName('Tostcon')[0];
+                var mapTostContent = document.getElementsByClassName('mapTostContent')[0];
+                //var tostMap = document.getElementById('tostMap');
+                Tostcon.parentNode.removeChild(Tostcon);
+                mapTostContent.parentNode.removeChild(mapTostContent);
+                //tostMap.parentNode.removeChild(tostMap);
+                // this.tostMap.destroy() // 销毁地图
+            },
+
+            // 打开自定义窗体
+            markerClick(e) {
+                var infoWindow = new AMap.InfoWindow({
+                    isCustom: true,  //使用自定义窗体
+                    autoMove: true, // 是否自动调整窗体到视野内
+                    offset: new AMap.Pixel(16, -45)
+                })
+                infoWindow.setContent(e.target.content);
+                infoWindow.open(this.map, e.target.getPosition());
+            },
+            //关闭信息窗体
+            closeInfoWindow() {
+                this.map.clearInfoWindow();
+            },
+            _renderCluserMarker(context) {
+                const count = this.markers.length;
+
+                let factor = Math.pow(context.count / count, 1 / 18)
+                let div = document.createElement('div');
+                let Hue = 180 - factor * 180;
+                let bgColor = 'hsla(' + Hue + ',100%,50%,0.7)';
+                let fontColor = 'hsla(' + Hue + ',100%,20%,1)';
+                let borderColor = 'hsla(' + Hue + ',100%,40%,1)';
+                let shadowColor = 'hsla(' + Hue + ',100%,50%,1)';
+                div.style.backgroundColor = bgColor
+                let size = Math.round(30 + Math.pow(context.count / count, 1 / 5) * 20);
+                div.style.width = div.style.height = size + 'px';
+                div.style.border = 'solid 1px ' + borderColor;
+                div.style.borderRadius = size / 2 + 'px';
+                div.style.boxShadow = '0 0 1px ' + shadowColor;
+                div.innerHTML = context.count;
+                div.style.lineHeight = size + 'px';
+                div.style.color = fontColor;
+                div.style.fontSize = '14px';
+                div.style.textAlign = 'center';
+                context.marker.setOffset(new AMap.Pixel(-size / 2, -size / 2));
+                context.marker.setContent(div)
+            }
+        }
+    }
+    // 自定义窗口tab切换
+    window.middleTab_click = function (_this) {
+        document.getElementsByClassName("middleTab_tollge")[0].classList.remove("tabActive")
+        document.getElementsByClassName("middleTab_tollge")[1].classList.remove("tabActive")
+        _this.setAttribute('class', 'middleTab_tollge tabActive')
+        document.getElementById('middleTab_click1_content').style.display = 'none'
+        document.getElementById('middleTab_click2_content').style.display = 'none'
+        if (_this.innerHTML == "牛只信息") {
+            document.getElementById('middleTab_click1_content').style.display = 'block'
+            return
+        }
+        if (_this.innerHTML == "预警信息") {
+            document.getElementById('middleTab_click2_content').style.display = 'block'
+
+            let rfid = document.getElementById('middleTab_click2_content')
+            // console.log(rfid.getAttribute('data-rfid'))
+            // console.log(axios.defaults.baseURL)
+            let data = {
+                rfid: rfid.getAttribute('data-rfid'),
+                token: getCookie('token')
+            }
+            // console.log(rfid.getAttribute('data-rfid'))
+            axios.get(warnRecordOne+'?rfid=' + rfid.getAttribute('data-rfid') + '&token=' + getCookie('token')).then((res)=> {
+                if (res.data.code === 200) {
+                    if (res.data.data.list.length > 0) {
+                        var listTxt = ""
+                        for (var i = 0; i < res.data.data.list.length; i++) {
+                            listTxt+= "<div class='middleContentList'><div class='middleContentFloat'>" +
+                                "<div class='mapItem'>"+res.data.data.list[i].createDate+"</div></div>" +
+                            "<div class='middleContentRight'>" +
+                            "<div class='middleContentRightItme'>" +
+                            "<div class='mapItem_1'>预警类型：<span class='type-state'>"+res.data.data.list[i].type+"</span></div><div class='mapItem_2'>预警状态："+res.data.data.list[i].status+"</div>" +
+                            "</div>" +
+                            "</div></div>"
+                        }
+                        document.getElementById('middleTab_click2_content').innerHTML = listTxt
+                    } else {
+                        var listNull = "<div style='display: block; text-align: center; padding-top: 20%'>无预警信息</div>"
+                        document.getElementById('middleTab_click2_content').innerHTML = listNull
+                    }
+                }
+            })
+            return
+        }
+    }
+</script>
+<style scoped>
+    .total-num {
+        position: absolute;
+        width: 200px;
+        height: 44px;
+        top: 14px;
+        left: 66px;
+        line-height: 44px;
+        text-align: center;
+        background: #FFFFFF;
+        box-shadow: 0 2px 3px 0 rgba(0, 0, 0, 0.15);
+        border-radius: 22px;
+        z-index: 10;
+        font-size: 12px;
+        color: #303133;
+    }
+
+    .total-num > span {
+        color: #15889A;
+    }
+
+    .map-wrap {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        z-index: 2020;
+    }
+
+    .map-wrap-full {
+        position: fixed;
+        width: 100% !important;
+        height: 100% !important;
+        z-index: 2020;
+        top: 0;
+        left: 0;
+    }
+
+    .map-full {
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+    }
+
+    .map-wrap #eden-map {
+        width: 100%;
+        height: 100%;
+    }
+
+    /*.map-operator {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 200px;
+      height: 85px;
+      display: flex;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      justify-content: space-between;
+    }*/
+
+    .map-operator > div {
+        position: relative;
+        width: 52px;
+        height: 52px;
+        background-repeat: no-repeat;
+        background-position: center center;
+        background-size: 50px;
+        cursor: pointer;
+    }
+
+    .map-operator .drawing {
+        background-image: url('icon/draw.png');
+        color: #fe6579;
+    }
+
+    .map-operator .submit {
+        background-image: url('icon/submit.png');
+        color: #a9ea0a;
+    }
+
+    .map-operator .clear {
+        background-image: url('icon/clear.png');
+        color: #b8c5cd;
+    }
+
+    .map-operator > div > div {
+        position: absolute;
+        width: 52px;
+        height: 22px;
+        line-height: 22px;
+        left: 0;
+        bottom: -22px;
+        font-size: 14px;
+    }
+
+    /* 去除左下角logo */
+    #eden-map >>> .amap-logo {
+        right: 0 !important;
+        left: auto !important;
+        display: none;
+    }
+
+    #eden-map >>> .amap-copyright {
+        right: 70px !important;
+        left: auto !important;
+    }
+
+    /*弹出层地图*/
+    #eden-map >>> #tostMap {
+        width: 100%;
+        height: 100%;
+    }
+
+    /*弹出层地图中的日期选择及运行轨迹播放按钮*/
+    #eden-map >>> .date_search {
+        position: absolute;
+        top: 72px;
+        left: 21px;
+        background: #fff;
+    }
+
+    #eden-map >>> .dateWrapperleft > input {
+        height: 36px;
+        text-align: center;
+        border: none;
+        width: 47%;
+        float: left;
+        outline: none
+    }
+
+    #eden-map >>> .dateWrapperleft > input::-webkit-inner-spin-button {
+        visibility: hidden;
+    }
+
+    #eden-map >>> .dateWrapperleft {
+        width: 400px;
+        height: 36px;
+        line-height: 36px;
+        border: 1px solid #ccc;
+        float: left;
+    }
+
+    #eden-map >>> .dateWrapperright .search_playbtn_hr {
+        width: 0px;
+        height: 20px;
+        border: 1px solid #FFFFFF;
+        position: absolute;
+        left: 46px;
+        top: 10px;
+        display: none;
+    }
+
+    #eden-map >>> .dateWrapperright {
+        width: 100px;
+        height: 36px;
+        line-height: 36px;
+        background-color: #15889A;
+        float: right;
+        padding-bottom: 2px;
+        position: relative;
+    }
+
+    #eden-map >>> #searchBtn {
+        float: left;
+        position: absolute;
+        /*width: 18px;*/
+        height: 18px;
+        top: 0px;
+        left: 9px;
+        /*background-image: url('./icon/system-serch.png');*/
+        background-repeat: no-repeat;
+        display: inline-block;
+        background-size: 18px;
+        color: #ffffff;
+    }
+
+    #eden-map >>> .zhiTxt {
+        padding-right: 10px;
+        font-weight: normal;
+        font-size: 12px;
+        float: left;
+    }
+
+    #eden-map >>> .playpause1, #eden-map >>> .playpause2 {
+        float: right;
+        width: 14px;
+        height: 17px;
+        background-repeat: no-repeat;
+        background-position: center right;
+        background-size: 14px;
+        position: absolute;
+        right: 20px;
+        top: 10px;
+    }
+
+    #eden-map >>> .playpause1 {
+        background-image: url('./icon/play.png');
+    }
+
+    #eden-map >>> .playpause2 {
+        background-image: url('./icon/playpause.png');
+    }
+
+    /* 弹出框 */
+    #eden-map >>> .tabActive {
+        color: #15889A !important;
+        font-weight: bold !important;
+    }
+
+    #eden-map >>> .Tostcon {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        filter: alpha(opacity=60);
+        opacity: 0.3;
+        /* display: none; */
+        z-Index: 99999;
+        background: #000000;
+    }
+
+    #eden-map >>> .mapTostContent_head {
+        width: 100%;
+        height: 60px;
+        box-shadow: 0 2px 0 0 rgba(0, 0, 0, 0.20);
+    }
+
+    #eden-map >>> .mapTostContent {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 1100px;
+        height: 813px;
+        background: #fff;
+        z-index: 99999;
+    }
+
+    #eden-map >>> .mapTostContent_head {
+        line-height: 60px;
+    }
+
+    #eden-map >>> .mapTostContent_headTit {
+        display: inline-block;
+        color: #15889A;
+        margin-left: 1%
+    }
+
+    #eden-map >>> .headTitFont {
+        font-size: 14px;
+    }
+
+    #eden-map >>> .mapTostContent_headData {
+        position: absolute;
+        top: 54px;
+        left: 0px;
+        z-index: 99;
+    }
+
+    #eden-map >>> .headDatas {
+        width: 520px;
+    }
+
+    #eden-map >>> .mapTostContent_headData input {
+        margin-left: 3.5%;
+        width: 400px;
+        height: 36px;
+        border: 1px solid #EBEEF5;
+        text-align: center;
+    }
+
+    #eden-map >>> .kt-icon-guanbi_o {
+        position: absolute;
+        right: 2.6%;
+        width: 9px;
+        height: 16px;
+        display: inline-block;
+        float: right;
+    }
+
+    /*自定义窗体信息样式*/
+    #eden-map >>> .content-window-card {
+        position: relative;
+        box-shadow: none;
+        bottom: 0;
+        left: 0;
+        width: auto;
+        padding: 0;
+    }
+
+    #eden-map >>> .middleContentRightItme {
+        padding-bottom: 44.5px;
+        color: #303133;
+        font-size: 14px;
+    }
+
+    #eden-map >>> .mapItem_1 {
+        padding-bottom: 13px;
+    }
+
+    #eden-map >>> .mapItem_1 .type-state {
+        color: #F56C6C;
+        font-size: 14px;
+    }
+
+    #eden-map >>> .mapItem_2 {
+    }
+
+    #eden-map >>> .middleContent {
+        position: relative;
+        font-size: 12px;
+        margin-top: 10px;
+        height: 320px;
+        width: 320px;
+        overflow-y: scroll;
+    }
+
+    #eden-map >>> .middleContent .long_lat .long_lat_txt1 {
+        height: 0 !important;
+        width: 112px;
+        float: left;
+        text-align: right;
+    }
+
+    #eden-map >>> .middleContent .long_lat .long_lat_txt2 {
+        height: 0 !important;
+        width: 180px;
+        float: right;
+        text-align: left;
+    }
+    #eden-map >>> .middleContent .long_lat_color {
+        color: #15889A;
+    }
+
+    #eden-map >>> .middleContent .long_lat p {
+    }
+
+    #eden-map >>> .middleContent .long_lat {
+        width: 100%;
+        height: 30px;
+        /*line-height: 1px;*/
+        text-align: center;
+        color: #303133;
+        font-size: 12px;
+    }
+
+    #eden-map >>> .middleContent .long_lat p > b {
+        font-weight: normal;
+    }
+
+    #eden-map >>> .mapItem {
+        width: 100%;
+        padding-bottom: 40px;
+        line-height: 20px;
+    }
+
+    #eden-map >>> .headerWrapper {
+        height: 40px;
+    }
+    #eden-map >>> .middleContentList {
+        width: 100%;
+        height: 100px;
+        border-bottom: 1px solid #CCCCCC;
+        padding-top: 14px;
+    }
+    #eden-map >>> .middleContentFloat {
+        float: left;
+        width: 26%;
+        margin-left: 10px;
+        text-align: center;
+        color: #909399;
+        font-size: 14px;
+        padding-top: 12px;
+    }
+
+    #eden-map >>> .middleContentRight {
+        float: left;
+        margin-left: 16px;
+        margin-top: 5px;
+    }
+
+    #eden-map >>> .middleTabwrapper {
+        width: 320px;
+        height: 40px;
+        border-top: 1px solid #ccc;
+        border-bottom: 1px solid #15889A;
+    }
+
+    #eden-map >>> .middleTab_tollge {
+        width: 50%;
+        float: left;
+        text-align: center;
+        line-height: 40px;
+        font-size: 14px;
+        color: rgb(48, 49, 51);
+        font-weight: normal;
+    }
+
+    #eden-map >>> .headerBaseCss .head-icon {
+        position: absolute;
+        left: 10px;
+        top: 12px;
+        display: inline-block;
+        width: 9px;
+        height: 16px;
+        background-image: url('./icon/leftarrow.png');
+    }
+
+    #eden-map >>> .leftarrow, #eden-map >>> .locus {
+        cursor: pointer;
+    }
+
+    #eden-map >>> .heade-tit, #eden-map >>> .locus {
+        text-align: center;
+    }
+
+    #eden-map >>> .heade-tit {
+        color: #303133;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    #eden-map >>> .locus {
+        color: #15889A;
+    }
+
+    #eden-map >>> .headerBaseCss {
+        width: 33.333%;
+        height: 40px;
+        line-height: 40px;
+        float: left;
+        display: inline-block;
+        font-size: 14px;
+        background-color: #FFFFFF;
+    }
+
+    #eden-map >>> .content-window-card p {
+        height: 2rem;
+    }
+
+    #eden-map >>> .custom-info {
+        border: solid 1px silver;
+    }
+
+    #eden-map >>> div.info-top {
+        position: relative;
+        background: none repeat scroll 0 0 #F9F9F9;
+        border-bottom: 1px solid #CCC;
+        border-radius: 5px 5px 0 0;
+    }
+
+    /*#eden-map >>> div.info-top div {
+      display: inline-block;
+      color: #333333;
+      font-size: 14px;
+      font-weight: bold;
+      line-height: 31px;
+      padding: 0 10px;
+    }*/
+
+    #eden-map >>> div.info-top img {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        transition-duration: 0.25s;
+    }
+
+    #eden-map >>> div.info-top img:hover {
+        box-shadow: 0px 0px 5px #000;
+    }
+
+    #eden-map >>> div.info-middle {
+    }
+
+    #eden-map >>> div.info-bottom {
+        height: 0px;
+        width: 100%;
+        clear: both;
+        text-align: center;
+    }
+
+    #eden-map >>> div.info-bottom img {
+        position: relative;
+        z-index: 104;
+    }
+
+    #eden-map >>> span {
+        margin-left: 5px;
+        font-size: 11px;
+    }
+
+    #eden-map >>> .info-middle img {
+        float: left;
+        margin-right: 6px;
+    }
+</style>

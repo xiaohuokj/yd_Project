@@ -1,0 +1,140 @@
+body,
+html {
+    width: 100%;
+    height: 100%;
+    background-color: rgb(255, 255, 255);
+    cursor: default;
+     overflow: hidden;
+   
+    
+
+}
+body {
+    font: 12px 'Helvetica LT 45 Light',Tahoma, Arial, 'Hiragino Sans GB','Hiragino Sans GB W3','Microsoft Yahei';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    color: $--font-color-default;
+}
+
+* {
+    box-sizing: border-box;
+    margin:0px;
+    padding:0px;
+    outline: none;
+}
+.page-layout{
+    height:100%;
+}
+#app,
+.app-wrapper {
+    height: 100%;
+}
+ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.clearfix {
+    *zoom: 1;
+    &:before,
+    &:after{
+        display: table;
+        line-height: 0;
+        content: "";
+    }
+    &:after{
+        clear: both;
+    }
+}
+.t-center{
+    text-align:center;
+}
+.f-left{
+    float: left;
+}
+.f-right{
+    float: right;
+}
+.p-relative{
+    position:relative;
+}
+.p-absolute{
+    position:absolute;
+}
+.p-fixed{
+    position:fixed;
+}
+.icon-other {
+    width: 20px;
+    height: 20px;
+    display: inline-block;
+    vertical-align: -2px;
+}
+.null-data{
+    color:#d8d8d8;
+    text-align:center;
+}
+.orange{
+    color:#fc8000;
+}
+.blue{
+        color:#2b8bf4;
+    }
+.green{
+    color:#1da381;
+}
+//路由跳转按钮
+.route-link{
+    text-decoration: none;
+    color: #62a8ea;
+}
+//详情列表
+.detail-list{
+    > li{
+        line-height:normal;
+        margin-bottom:8px;
+        overflow:hidden;
+    }
+    font-size:12px;
+    label{
+        color:$--font-color-light;
+        float:left;
+        text-align:right;
+    }
+}
+$labelGrid:10;
+@for $i from 1 through $labelGrid {
+    .detail-list#{$i}{
+        label{
+            width: 12px * $i;
+        }
+        .content{
+            margin-left: 12px*$i+10px;
+        }
+    }
+}
+.el-tree .el-tree-node.is-current .el-tree-node__content,
+.el-tree .el-tree-node .el-tree-node__content:hover{
+    color:#1da381;
+    background-color:none;
+}
+/*弹框-min*/
+.min-dialog{
+  width: 560px !important;
+  left:50%;
+  margin-left:-280px;
+}
+.min-dialog .el-dialog{
+  width: auto;
+}
+.el-dialog__header {
+  padding: 15px 20px 10px;
+}
+.el-dialog__title{
+  font-size:16px;
+}
+.el-dialog__headerbtn{
+  font-size: 18px;
+}
+
+

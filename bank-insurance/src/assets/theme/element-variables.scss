@@ -1,0 +1,91 @@
+/*  Font
+-------------------------- */
+$--font-color-default: #333333 !default;//默认字体颜色
+$--font-color-light:#666 !default;
+$--font-color-lighter:#999 !default;
+$--font-size-base: 12px !default;
+$--font-size-small: 12px !default;
+/* Border
+-------------------------- */
+$--border-color-base: #ccd1d9 !default;
+$--border-color-lighter: #e6e9ee !default;
+$--border-radius-base: 2px !default;
+//字体颜色
+$--color-primary: #1ea381 !default;
+$--color-text-primary: $--font-color-default !default;//按钮字体颜色
+$--color-text-regular: $--font-color-default !default;
+$--color-text-placeholder:#ccd1d9 !default;
+$--color-danger: #eb5638 !default;
+/* Size
+-------------------------- */
+$--size-base: 12px !default;
+/* Link
+-------------------------- */
+$--link-color: #62a8ea !default;
+$--link-hover-color: #62a8ea !default;
+/* Box-shadow
+-------------------------- */
+$--box-shadow-light: 0 2px 12px 0 rgba(6, 69, 54, 0.2) !default;
+/* Disable base
+-------------------------- */
+$--disabled-fill-base: #eeeeee !default;
+$--disabled-color-base: $--color-text-primary !default;
+$--disabled-border-base: #eeeeee !default;
+/* Checkbox
+-------------------------- */
+$--checkbox-font-size: 12px !default;
+$--checkbox-input-height: 16px !default;
+$--checkbox-input-width: 16px !default;
+/* Radio
+-------------------------- */
+$--radio-font-size: 12px !default;
+$--radio-input-height: 16px !default;
+$--radio-input-width: 16px !default;
+/* Select
+-------------------------- */
+$--select-multiple-input-color: $--font-color-default !default;
+$--select-option-height: 32px !default;
+$--select-option-hover-background: #ecf9f5 !default;
+$--select-option-selected-hover: #ecf9f5 !default;
+$--select-dropdown-padding: 5px 0 !default;
+/* Input
+-------------------------- */
+$--input-height: 30px !default;
+$--input-border-radius: 0px !default;
+$--input-small-font-size: 12px !default;
+$--input-medium-height: 30px !default;
+/* Table
+-------------------------- */
+$--table-header-background: #ffffff !default;
+$--table-tbody-tr-th-height:35px !default;
+$--table-tbody-tr-th-font:14px !default;
+$--table-tbody-tr-th-color:#526069 !default;
+$--table-tbody-tr-th-fontwight:bold!default;
+$--table-tbody-tr-td-font:12px !default;
+/* Pagination
+-------------------------- */
+$--pagination-color: $--font-color-light !default;
+$--pagination-button-color: $--font-color-light !default;
+$--pagination-button-width: 56px !default;
+$--pagination-button-height: 26px !default;
+$--pagination-button-disabled-color: #ababab;
+/* DatePicker
+--------------------------*/
+$--datepicker-off-color: $--font-color-lighter !default;
+/* Notification
+-------------------------- */
+$--notification-raduis: 8px !default;
+/* Dialog
+-------------------------- */
+$--dialog-padding-primary: 20px !default;
+/* button
+-------------------------- */
+$--button-disabled-color:#ababab !default;
+$--button-disabled-border: #eeeeee !default;
+
+/* 改变 icon 字体路径变量，必需
+ $--font-path: '~element-ui/lib/theme-chalk/fonts';*/
+@import '../style/common.scss';
+@import '../style/form.scss';
+@import '../style/button.scss';
+@import '../style/map.scss';

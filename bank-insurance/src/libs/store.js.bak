@@ -1,0 +1,36 @@
+import Vue from 'vue'
+import Vuex from 'vuex'
+
+Vue.use(Vuex);
+export default new Vuex.Store({
+    state: {
+        account: '',
+        token: null,
+        accountName:'',
+        cityNumber:'',
+        cityName:'',
+        map:null,
+        enableStatus:false,
+        caseId:''
+    },
+    mutations: {
+        update(state,value) {
+            state.token = value.token;
+            state.account = value.account;
+            state.accountName = value.name;
+            state.cityNumber=value.cities[0].cityNumber;
+            state.cityName=value.cities[0].cityName;
+        },
+        updateMap(state,value){
+            state.map=value;
+        },
+        updateStatus(state,value){
+            state.enableStatus=value;
+        },
+        updateCaseId(state,value){
+            state.caseId=value;
+        }
+    },
+    getters:{
+    }
+})

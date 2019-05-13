@@ -1,0 +1,111 @@
+.eleVerticalCenter {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  -webkit-transform: translate(-50%, -50%);
+  -moz-transform: translate(-50%, -50%);
+  -ms-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+}
+.table-layout {
+  position: relative;
+}
+.table-layout .table-page-wrap {
+  position: absolute;
+  width: 100%;
+  left: 0px;
+  bottom: 0px;
+  z-index: 10;
+}
+.el-table {
+  color: #333333;
+  font-size: 12px;
+}
+.el-table thead {
+  color: #666666;
+}
+.el-table thead th {
+  font-weight: normal;
+}
+.el-table th,
+.el-table td {
+  padding: 5px 0;
+}
+.table-search {
+  border-width: 1px 1px 0;
+  border-color: #e6e9ed;
+  border-style: solid;
+  background-color: #f5f7fa;
+}
+.table-default-query {
+  padding: 10px;
+}
+.table-default-query .el-input {
+  width: 360px;
+}
+.table-advanced-query {
+  border-top: 1px #e6e9ed solid;
+  padding: 10px 10px 0px;
+}
+.table-advanced-query .el-input,
+.table-advanced-query .el-select,
+.table-advanced-query .el-date-editor.el-input {
+  width: auto;
+  display: block;
+}
+.advanced-query-switch {
+  float: right;
+  line-height: 30px;
+}
+.advanced-query-switch .el-icon-arrow-down {
+  margin-left: 5px;
+}
+.table-default-query .el-icon-arrow-down,
+.look-more-team .el-icon-arrow-down {
+  -webkit-transition: -webkit-transform 0.3s;
+  transition: -webkit-transform 0.3s;
+  transition: transform .3s;
+  transition: transform 0.3s, -webkit-transform 0.3s;
+  -webkit-transform: rotateZ(0deg);
+  transform: rotateZ(0deg);
+}
+.table-default-query .el-icon-arrow-down.open,
+.look-more-team .el-icon-arrow-down.open {
+  -webkit-transform: rotateZ(180deg);
+  transform: rotateZ(180deg);
+}
+.el-pagination {
+  background-color: #f5f7fa;
+  padding: 10px;
+}
+.el-pagination button {
+  border: 1px #e3e8ea solid;
+  border-radius: 2px;
+  font-size: 12px;
+  padding: 0 10px;
+  min-width: 56px;
+}
+.el-pagination .btn-prev {
+  margin-right: 5px;
+}
+.el-pagination span:not([class*=suffix]) {
+  font-size: 12px;
+}
+.el-pagination__jump {
+  color: #999999;
+  margin-left: 10px;
+}
+.el-pagination__editor {
+  margin: 0 5px;
+}
+.el-pagination__sizes .el-input .el-input__inner {
+  font-size: 12px;
+}
+.el-pager li {
+  background: none;
+}
+.table-filter {
+  border-top: 1px #ccd1d9 solid;
+  background-color: #ffffff;
+  padding: 10px;
+}

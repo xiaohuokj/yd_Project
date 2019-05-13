@@ -1,0 +1,517 @@
+<template>
+    <div class="menu-style p-absolute">
+        <div class="menu-list p-relative">
+            <div class="showBtn menu-icon" v-bind:class="{ hideBtn: !showMenu}" @click="showfun"></div>
+            <div class="menuStyle" v-show="showMenu">
+                <ul class="menuList">
+                    <li v-for="(value, key) in menulist" :class="{licurrent:clickmenu['list'+(key+1)]}"
+                        @click="clickMenu(key)" @mouseover="moveIn(key)">
+                        <!--<a v-if="value.url" :href="value.url">
+                            <p v-if="listmenu['list'+(key+1)]">
+                                <span class="menu-icon" :class="[value.style]"></span>
+                                <span class="nameHeight">{{value.name}}</span>
+                            </p>
+                            <p v-else>
+                                <span class="menu-icon" :class="[value.style,value.current]"></span>
+                            </p>
+                        </a>-->
+                        <router-link v-if="value.path" tag="a" :to="{path:value.path, query: {id: cattlefarmId}}">
+                            <p v-if="listmenu['list'+(key+1)]">
+                                <span class="menu-icon" :class="[value.style]"></span>
+                                <span class="nameHeight">{{value.name}}</span>
+                            </p>
+                            <p v-else>
+                                <span class="menu-icon" :class="[value.style,value.current]"></span>
+                                <span class="nameHeight">{{value.name}}</span>
+                            </p>
+                        </router-link>
+                        <!--<div v-else>
+                            <p v-if="listmenu['list'+(key+1)]">
+                                <span class="menu-icon" :class="[value.style]"></span>
+                                <span class="nameHeight">{{value.name}}</span>
+                            </p>
+                            <p v-else>
+                                <span class="menu-icon" :class="[value.style,value.current]"></span>
+                            </p>
+                        </div>-->
+                    </li>
+                </ul>
+                <!--<div class="menu-qr-code"></div>
+                <div class="menu-hover-qr-code"><img src="../../assets/images/qrhovercode.png"></div>
+                <div class="botttomlogout" @click="logout">退出</div>-->
+            </div>
+            <div class="childmenu" v-show="childshow" @mouseout="mouseoutchildBox" @mouseover="mouseoverchildBox">
+                <div class="childName">{{childName}}</div>
+                <ul>
+                    <li v-for="(value, key) in childmenu" class="li_1"
+                        :class="{childhover:childmenu[key].childbjhover,childcurrent:childmenu[key].childbjshow}"
+                        @click="clildClick(key)" @mouseover="childmenuhover(key)" @mouseout="childmenuhout(key)">
+                        <router-link :to="value.url">
+                            <i>●</i>{{value.name}}
+                        </router-link>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</template>
+<script>
+    import bus from '@/libs/bus'
+    export default {
+        name: 'Menu',
+        data() {
+            return {
+                cattlefarmId: localStorage.getItem('cattlefarm_Id'),
+                childName: '',
+                showMenu: false,
+                childshow: false,
+                selectName: "",
+                parentIndex: 0,
+                selectParI: 0,
+                menulist: [
+                    {
+                        id: 0,
+                        name: '总览',
+                        path: '/overview',
+                        style: 'projecticon',
+                        current: 'iconcurrent'
+                    },
+                    {
+                        id: 1,
+                        name: '实时预览',
+                        path: '/monitored',
+                        style: 'stationicon',
+                        current: 'iconcurrent'
+                    },
+                    {
+                        id: 2,
+                        name: '预警信息',
+                        path: '/earlywarning',
+                        style: 'superviseicon',
+                        current: 'iconcurrent'
+                    },
+                    {
+                        id: 3,
+                        name: '牛只档案',
+                        path: '/archive',
+                        style: 'eventmanger',
+                        current: 'iconcurrent'
+                    },
+                    /*{
+                        id: 4,
+                        name: '健康统计',
+                        path: '/healthy',
+                        style: 'reportData',
+                        current: 'iconcurrent'
+                    },*/
+                    {
+                        id: 5,
+                        name: '生产养殖',
+                        path: '/breed',
+                        style: 'informationicon',
+                        current: 'iconcurrent'
+                    },
+                ],
+                childmenu: [],
+                listmenu: {
+                    list1: false,
+                    list2: false,
+                    list3: false,
+                    list4: false,
+                    list5: false
+                },
+                clickmenu: {
+                    list1: false,
+                    list2: false,
+                    list3: false,
+                    list4: false,
+                    list5: false
+                },
+                active: '',
+            }
+        },
+        methods: {//是否显示菜单
+            showfun() {
+                this.showMenu = !this.showMenu;
+            },//是否显示菜单
+            clildClick(e) {//点击子菜单的LI
+                for (let j = 0; j < this.childmenu.length; j++) {
+                    this.childmenu[j].childbjhover = false
+                    this.childmenu[j].childbjshow = false
+                }
+                for (let i = 0; i < this.menulist.length; i++) {
+                    this.menulist['list' + (i + 1)] = false;
+                    this.clickmenu['list' + (i + 1)] = false;
+                }
+                var id = parseInt(this.parentIndex);
+                this.clickmenu['list' + (id + 1)] = true;
+                this.childmenu[e].childbjshow = true;
+                // this.parentIndex=this.selectParI;
+                this.selectParI = this.parentIndex;
+                sessionStorage.setItem('lastMenu', this.parentIndex);
+                this.showMenu = !this.showMenu;
+            },
+            childmenuhover(e) {//鼠标滑出子菜单LI
+                for (let i = 0; i < this.childmenu.length; i++) {
+                    this.childmenu[i].childbjhover = false;
+                }
+                this.childmenu[e].childbjhover = true;
+            },
+            childmenuhout(e) {//鼠标滑出子菜单LI
+                for (let i = 0; i < this.childmenu.length; i++) {
+                    this.childmenu[i].childbjhover = false
+                }
+            },
+            mouseoutchildBox() {//鼠标滑出子菜单
+                this.childshow = false;
+            },
+            mouseoverchildBox() {
+                this.childshow = true;
+            },
+            clickMenu(e) {//点击父级菜单
+
+                var id = parseInt(e);
+                if (!!this.menulist[e].childList && this.menulist[e].childList.length > 0) {
+
+                } else {
+                    if (!!this.childmenu && this.childmenu.length) {
+                        for (let j = 0; j < this.childmenu.length; j++) {
+                            this.childmenu[j].childbjhover = false
+                            this.childmenu[j].childbjshow = false
+                        }
+                    }
+                    for (var i = 0; i < this.menulist.length; i++) {
+                        this.menulist['list' + (i + 1)] = false;
+                        this.clickmenu['list' + (i + 1)] = false;
+                    }
+                    this.clickmenu['list' + (id + 1)] = true;
+                }
+                this.parentIndex = id;
+                this.selectParI = id;
+                console.log('点击浮菜单，索引值' + id)
+                sessionStorage.setItem('lastMenu', id);
+
+            },
+			moveIn(e){
+				 var id = parseInt(e);
+				for (var i = 0; i < this.menulist.length; i++) {
+				    this.menulist['list' + (i + 1)] = false;
+				    this.clickmenu['list' + (i + 1)] = false;
+				}
+				this.clickmenu['list' + (id + 1)] = true;
+			},
+            menuhover(e) {   //菜单hover事件
+                var id = parseInt(e);
+                this.listmenu['list' + (id + 1)] = true;
+                if (!!this.menulist[e].childList && this.menulist[e].childList.length > 0) {
+                    this.parentIndex = id;
+                    this.childName = this.menulist[e].name
+                    this.childmenu = this.menulist[e].childList;
+                    this.childshow = true;
+                }
+            },
+            menuhout(e) {
+                var id = parseInt(e);
+                if (!!this.menulist[e].childList && this.menulist[e].childList.length > 0) {
+                    this.childName = this.menulist[e].name
+                    this.childmenu = this.menulist[e].childList;
+                    this.childshow = true;
+                } else {
+                    this.childshow = false;
+                }
+                this.listmenu['list' + (id + 1)] = false;
+            },
+            logout() {//退出
+                let that = this;
+                this.$confirm('确认退出吗?', '提示', {
+                    confirmButtonClass: 'el-button--primary'
+                }).then(() => {
+                    //确认
+                    var loginhef = localStorage.getItem('loginhef')
+                    localStorage.removeItem('access-user');
+                    localStorage.setItem("user_token", '');
+                    window.location.href = "../../supervise-web/login.html"
+                }).catch(() => {
+                });
+            }
+        },
+        mounted() {
+            var currentIndex = sessionStorage.getItem('lastMenu');
+            this.clickmenu['list' + (currentIndex + 1)] = true;
+
+            bus.$on('cattlefarm_Id',(cattlefarm_Id)=>{
+                this.cattlefarmId = cattlefarm_Id
+            });
+        },
+
+
+        created() {
+            if (sessionStorage.getItem("lastMenu") != null && sessionStorage.getItem("lastMenu") != '') {
+                this.selectParI = sessionStorage.getItem("lastMenu");
+                //console.log(this.selectParI + 'layout')
+                // console.log(this.menulist[this.selectParI] + 'layout')
+            }
+        },
+        beforeDestroy() {
+            clearInterval(this.timer);
+            bus.$off('cattlefarm_Id');
+        }
+
+    }
+</script>
+<style lang="scss">
+    $--width: 74px;
+    $--commlength: 100%;
+    .menu-style, .menu-list {
+        width: $--width;
+        height: $--commlength;
+        z-index: 100;
+    }
+
+    .menu-icon {
+        background: url(../../assets/images/menuicon2.png) no-repeat 0 0;
+    }
+
+    .showBtn {
+        position: absolute;
+        left: 0px;
+        top: -10px;
+        width: 74px;
+        z-index: 100;
+        text-align: center;
+        height: 94px;
+        box-sizing: border-box;
+        cursor: pointer;
+        background-position: 25px -45px;
+
+        &.hideBtn {
+            background-position: 25px 30px;
+        }
+    }
+
+    .menuStyle {
+        padding-top: 94px;
+        width: 74px;
+        position: relative;
+        min-height: 500px;
+        height: $--commlength;
+        background: rgba(0,4,35,0.8);
+        filter: alpha(opacity=90);
+        
+        .menuList {
+            max-height: 500px;
+
+            li {
+                display: block;
+                list-style: none;
+                height: 100px;
+                text-align: center;
+                cursor: pointer;
+
+                a {
+                    color: white;
+                    text-decoration: none;
+                }
+
+                &.licurrent {
+                    background: #5C9BF9;
+                }
+
+                span {
+                    display: block;
+                }
+
+                .nameHeight {
+                    line-height: 0;
+                    height: 34px;
+                    color: #fff;
+                }
+
+                // 环卫监管
+                .superviseicon {
+                    background-position: 0px -208px;
+                    width: 74px;
+                    height: 40px;
+                    display: block;
+
+                    &.iconcurrent {
+                        height: 74px;
+                        background-position: 25px -162px;
+                    }
+                }
+
+                // 场站监控
+                .stationicon {
+                    background-position: 0px -282px;
+                    width: 74px;
+                    height: 40px;
+                    display: block;
+
+                    &.iconcurrent {
+                        height: 74px;
+                        background-position: 25px -230px;
+                    }
+                }
+
+                // 场站监控
+                .informationicon {
+                    background-position: 0px -360px;
+                    width: 74px;
+                    height: 40px;
+                    display: block;
+
+                    &.iconcurrent {
+                        height: 74px;
+                        background-position: 25px -305px;
+                    }
+                }
+
+                .projecticon {
+                    background-position: 0px -434px;
+                    width: 74px;
+                    height: 40px;
+                    display: block;
+
+                    &.iconcurrent {
+                        height: 74px;
+                        background-position: 25px -383px;
+                    }
+                }
+
+                .eventmanger {
+                    background-position: 0px -512px;
+                    width: 74px;
+                    height: 40px;
+                    display: block;
+
+                    &.iconcurrent {
+                        height: 74px;
+                        background-position: 25px -460px;
+                    }
+                }
+
+                /*数据分析*/
+                .reportData {
+                    background-position: 0px -590px;
+                    width: 74px;
+                    height: 40px;
+                    display: block;
+
+                    &.iconcurrent {
+                        height: 74px;
+                        background-position: 0px -581px;
+                    }
+                }
+
+            }
+        }
+    }
+
+    .childmenu {
+        position: absolute;
+        width: 220px;
+        height: 100%;
+        left: 74px;
+        top: 0px;
+        z-index: 500;
+        background: #242f35;
+
+        .childName {
+            line-height: 80px;
+            padding-left: 20px;
+            font-size: 16px;
+        }
+
+        ul {
+            li {
+                padding: 0;
+                padding-left: 26px;
+                line-height: 40px;
+                font-size: 14px;
+
+                a {
+                    color: white;
+                    text-decoration: none;
+                }
+
+                i {
+                    font-style: normal;
+                    font-size: 12px;
+                    padding-right: 10px;
+                }
+
+                &.childcurrent {
+                    background: #1d262b;
+                }
+
+                &.childhover {
+                    background: #273339;
+                }
+            }
+        }
+    }
+
+    .marginleft {
+        margin-left: 50px
+    }
+
+    .botttomlogout {
+        width: 48px;
+        height: 48px;
+        line-height: 48px;
+        background: #fc4782;
+        border-radius: 50%;
+        text-align: center;
+        position: absolute;
+        color: #fff;
+        bottom: 20px;
+        left: 13px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    /*二维码*/
+    .menu-qr-code {
+        width: 50px;
+        height: 50px;
+        background: url(../../assets/images/qrcode.png) no-repeat center;
+        position: absolute;
+        bottom: 110px;
+        margin-left: 12px;
+        cursor: pointer;
+    }
+
+    .menu-hover-qr-code {
+        width: 308px;
+        height: 348px;
+        position: absolute;
+        left: 62px;
+        bottom: 70px;
+        display: none;
+        z-index: 501;
+        /*background:url(../images/qrhovercode.png) no-repeat center;*/
+        /*box-shadow: 0 0 10px rgba(0,0,0,0.8) inset;*/
+    }
+
+    .menu-qr-code:hover + .menu-hover-qr-code {
+        display: block;
+    }
+
+    .menu-hover-qr-code img {
+        width: 100%;
+        height: 100%;
+    }
+
+    @media screen and (max-width: 1366px) {
+        .menu-hover-qr-code {
+            width: 214px;
+            height: 245px;
+            position: absolute;
+            left: 66px;
+            bottom: 88px;
+            display: none;
+            /*background:url(../images/qrhovercode.png) no-repeat center;*/
+            /*box-shadow: 0 0 10px rgba(0,0,0,0.8) inset;*/
+        }
+    }
+</style>
